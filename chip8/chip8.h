@@ -45,7 +45,7 @@ private:
 
     //keypad input
     unsigned char key[16];
-    
+
     //Update scren flag
     bool drawFlag;
 
