@@ -11,7 +11,7 @@ chip8::chip8() :
 	sp(0),
 	opcode(0),
 	I(0),
-	PC(0),
+	pc(0),
 	delay_timer(0),
 	sound_timer(0),
 	drawFlag(0),
@@ -28,24 +28,32 @@ chip8::~chip8()
 void chip8::Initialize()
 {
 	//Initialize memory and registers
-	PC = 0x200;
+	pc = 0x200;
 
+	opcode = 0;
+	I      = 0;
+	sp     = 0;
+
+	//Load font into memory (5 X 16 = 80)
+	memcpy(memory, chip8_fontset, sizeof(char) * 80);
 
 	// This is a test remove later - 
 	// Assume the following:
-	memory[PC] = 0xA2;
-	memory[PC + 1] = 0xF0;
+	memory[pc] = 0xA2;
+	memory[pc + 1] = 0xF0;
 }
 
-void chip8::LoadGame()
+void chip8::LoadGame(char* fileName)
 {
+	printf("fileName %s\n", fileName);
+
 
 }
 
 void chip8::EmulateCycle()
 {
 	//Load opcode
-	opcode = memory[PC] << 8 | memory[PC + 1];
+	opcode = memory[pc] << 8 | memory[pc + 1];
 
 	//Decode opcode 
 	//https://en.wikipedia.org/wiki/CHIP-8 has a list of the opcodes
@@ -69,9 +77,15 @@ void chip8::EmulateCycle()
 			}
 			break;
 
+		case 0x2000: //2NNN: calls subroutine at NNN
+			stack[sp] = pc; //store the pc in stack and increment stack pointer index
+			sp++;
+			pc = opcode & 0xFFF; //set the PC to NNN
+			
+
 		case 0xA000: //ANNN: Sets Index register to the address NNN
 			I = opcode & 0x0FFF;
-			PC += 2;
+			pc += 2;
 			break;
 
 

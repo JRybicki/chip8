@@ -10,31 +10,41 @@ void SetupGraphics() { };
 void SetupInput() { };
 void DrawGraphics() { };
 
-int main()
+int main(int argc, char** argv)
 {
-    // Set up render system and register input callbacks
+    //Set up render system and register input callbacks
     SetupGraphics();
     SetupInput();
 
     chip8 myChip8;
 
-    // Initialize the Chip8 system and load the game into the memory  
-    myChip8.Initialize();
-    myChip8.LoadGame(); //game name
+    //Load the game passed into program
+    if (argc > 1)
+    {
+        //Initialize the Chip8 system and load the game into the memory  
+        myChip8.Initialize();
+        myChip8.LoadGame(argv[1]); //game name
+    }
+    else
+    {
+        //No game loaded
+        return;
+    }
 
-    // Emulation loop
+
+    //Emulation loop
     for (;;)
     {
-        // Emulate one cycle
+        //Emulate one cycle
         myChip8.EmulateCycle();
 
-        // If the draw flag is set, update the screen
+        //If the draw flag is set, update the screen
         if (myChip8.GetDrawFlag())
         {
             DrawGraphics();
         }
 
-        // Store key press state (Press and Release)
+        //Store key press state (Press and Release)
         myChip8.SetKeys();
     }
 
