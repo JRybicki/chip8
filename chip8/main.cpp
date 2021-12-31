@@ -2,8 +2,8 @@
 
 #include "chip8.h"
 
-//0x000 - 0x1FF - Chip 8 interpreter(contains font set in emu)
-//0x050 - 0x0A0 - Used for the built in 4x5 pixel font set(0 - F)
+//0x000 - 0x1FF - This would be the chip 8 interpreter but doesn't really matter, keep with history and leave empty
+//0x000 - 0x050 - Use this for the built in 4x5 pixel font set(0 - F)
 //0x200 - 0xFFF - Program ROM and work RAM
 
 void SetupGraphics() { };
@@ -23,16 +23,22 @@ int main(int argc, char** argv)
     {
         //Initialize the Chip8 system and load the game into the memory  
         myChip8.Initialize();
-        myChip8.LoadGame(argv[1]); //game name
+
+        //Error if game can't be read, probably don't quit the program in a final version
+        if (!myChip8.LoadGame(argv[1])) //game name
+        {
+            return 0;
+        }
     }
     else
     {
-        //No game loaded
-        return;
+        //No input given for the rom
+        return 0;
     }
 
 
     //Emulation loop
+    //Don't use vsync in this solution, TODO: just keep track of the time and run at 60Hz
     for (;;)
     {
         //Emulate one cycle

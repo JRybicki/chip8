@@ -7,7 +7,7 @@ public:
     ~chip8();
 
     void Initialize();
-    void LoadGame(char* fileName);
+    bool LoadGame(char* romPath);
 
     void EmulateCycle();
 

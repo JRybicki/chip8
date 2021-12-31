@@ -1,4 +1,4 @@
-#include <cstring>
+#include <string>
 #include <stdio.h>
 
 #include "chip8.h"
@@ -25,9 +25,10 @@ chip8::~chip8()
     //destructor
 }
 
+//Initialize memory and registers
 void chip8::Initialize()
 {
-    //Initialize memory and registers
+    //ROM is loaded at address 0x200
     pc = 0x200;
 
     opcode = 0;
@@ -43,11 +44,25 @@ void chip8::Initialize()
     memory[pc + 1] = 0xF0;
 }
 
-void chip8::LoadGame(char* fileName)
+bool chip8::LoadGame(char* romPath)
 {
-    printf("fileName %s\n", fileName);
+    //Load the file into memory at the program counter (0x0020)
+    FILE* romFP = fopen(romPath, "rb");
+    if (!romFP)
+    { 
+        printf("Error: could not open file %s\n", romPath);
+        return false;
+    }
 
+    unsigned int bytesRead = fread(&memory[pc], sizeof(char), sizeof(memory), romFP);
 
+    if (bytesRead < 0)
+    {
+        return false;
+    }
+
+    printf("fileName: %s opened %d bytes\n", romPath, bytesRead);
+    return true;
 }
 
 void chip8::EmulateCycle()
@@ -57,6 +72,7 @@ void chip8::EmulateCycle()
 
     //Decode opcode 
     //https://en.wikipedia.org/wiki/CHIP-8 has a list of the opcodes
+    //Remember - Stack and PC are unsigned shorts (2 bytes that represent numbers from 0x0000 to OxFFFF)
     switch (opcode & 0xF000)
     {
     //Special opcodes
@@ -94,7 +110,6 @@ void chip8::EmulateCycle()
         printf("Unknown opcode: 0x%X\n", opcode);
         break;
     }
-
 }
 
 void chip8::SetKeys()
