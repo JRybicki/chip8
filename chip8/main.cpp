@@ -1,6 +1,5 @@
 #include <iostream>
 #include <chrono>
-#include <ctime>
 #include "chip8.h"
 
 //Use chrono high resolution clock if setting framerate
