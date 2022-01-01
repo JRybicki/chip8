@@ -1,7 +1,15 @@
 #include <iostream>
-
+#include <chrono>
+#include <ctime>
 #include "chip8.h"
 
+//Use chrono high resolution clock if setting framerate
+typedef std::chrono::high_resolution_clock Clock;
+
+//#DEFINES
+#define DEBUGPRINT
+
+//PROGRAM INFORMATION
 //0x000 - 0x1FF - This would be the chip 8 interpreter but doesn't really matter, keep with history and leave empty
 //0x000 - 0x050 - Use this for the built in 4x5 pixel font set(0 - F)
 //0x200 - 0xFFF - Program ROM and work RAM
@@ -36,22 +44,47 @@ int main(int argc, char** argv)
         return 0;
     }
 
+    //Frames per second, TODO: Make this variable in the future
+    const unsigned int frameRate = 60;
 
+    std::chrono::nanoseconds deltaTime;
+    std::chrono::nanoseconds accumulator = std::chrono::seconds(0);
+    std::chrono::nanoseconds frameTime   = std::chrono::nanoseconds(1000000000 / frameRate);
+
+    //Store this outside for loop so value keeps
+    std::chrono::time_point<Clock> oldTime = Clock::now();
     //Emulation loop
-    //Don't use vsync in this solution, TODO: just keep track of the time and run at 60Hz
+    //Don't use vsync in this solution yet, TODO: just keep track of the time and run at 60Hz
     for (;;)
     {
-        //Emulate one cycle
-        myChip8.EmulateCycle();
+        deltaTime = Clock::now() - oldTime;
+        oldTime   = Clock::now();
 
-        //If the draw flag is set, update the screen
-        if (myChip8.GetDrawFlag())
+        accumulator += deltaTime;
+
+        while (accumulator.count() > frameTime.count())
         {
-            DrawGraphics();
-        }
+#ifdef DEBUGPRINT
+            //This will affect the framerate timing
+            std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(accumulator);
+            std::cout << "Frame timer: " << ms.count() << std::endl;
+#endif // DEBUGPRINT
 
-        //Store key press state (Press and Release)
-        myChip8.SetKeys();
+            accumulator -= frameTime;
+
+            
+            //Emulate one cycle
+            myChip8.EmulateCycle();
+
+            //If the draw flag is set, update the screen
+            if (myChip8.GetDrawFlag())
+            {
+                DrawGraphics();
+            }
+
+            //Store key press state (Press and Release)
+            myChip8.SetKeys();
+        }
     }
 
     return 0;
