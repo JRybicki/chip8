@@ -73,10 +73,12 @@ void chip8::EmulateCycle()
     //Decode opcode 
     //https://en.wikipedia.org/wiki/CHIP-8 has a list of the opcodes
     //Remember - Stack and PC are unsigned shorts (2 bytes that represent numbers from 0x0000 to OxFFFF)
+    //Using brackets on case statement to scope variables to help debugging
     switch (opcode & 0xF000)
     {
     //Special opcodes
     case 0x0000:
+    {
         switch (opcode & 0x000F)
         {
         case 0x0000: //0x00E0: Clears the screen        
@@ -92,23 +94,43 @@ void chip8::EmulateCycle()
             break;
         }
         break;
+    }
+
+    case 0x1000: //1NNN: Go to address NNN
+    {
+        pc = opcode & 0x0FFF;
+        break;
+    }
 
     case 0x2000: //2NNN: calls subroutine at NNN
+    {
         stack[sp] = pc; //store the pc in stack and increment stack pointer index
         sp++;
-        pc = opcode & 0xFFF; //set the PC to NNN
+        pc = opcode & 0x0FFF; //set the PC to NNN
+        break;
+    }
 
+    case 0x6000: //6XNN: Sets VX to NN
+    {
+        unsigned short regIndex = (opcode >> 8) & 0x000F; //Shift by byte to get only X value
+        unsigned short value    = opcode & 0x00FF;
+        V[regIndex] = value;
+        pc += 2;
+        break;
+    }
 
     case 0xA000: //ANNN: Sets Index register to the address NNN
+    {
         I = opcode & 0x0FFF;
         pc += 2;
         break;
-
-
+    }
 
     default:
+    {
         printf("Unknown opcode: 0x%X\n", opcode);
         break;
+    }
     }
 }
 

@@ -43,7 +43,7 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    //Frames per second, TODO: Make this variable in the future
+    //Frames per second, TODO: Make this variable in the future (Probably default to 60)
     const unsigned int frameRate = 60;
 
     std::chrono::nanoseconds deltaTime;
@@ -71,7 +71,6 @@ int main(int argc, char** argv)
 
             accumulator -= frameTime;
 
-            
             //Emulate one cycle
             myChip8.EmulateCycle();
 
