@@ -2,6 +2,13 @@
 #include <chrono>
 #include "chip8.h"
 
+//Include GLEW
+#include <GL/glew.h>
+
+//Include GLFW
+#include <GLFW/glfw3.h>
+GLFWwindow* window;
+
 //Use chrono high resolution clock if setting framerate
 typedef std::chrono::high_resolution_clock Clock;
 
@@ -13,14 +20,37 @@ typedef std::chrono::high_resolution_clock Clock;
 //0x000 - 0x050 - Use this for the built in 4x5 pixel font set(0 - F)
 //0x200 - 0xFFF - Program ROM and work RAM
 
-void SetupGraphics() { };
+bool SetupGraphics() 
+{ 
+    //Initialise GLFW
+    if (!glfwInit())
+    {
+        std::cout << "Failed to initialize GLFW" << std::endl;
+        return false;
+    }
+
+    //Open a window and create its OpenGL context
+    window = glfwCreateWindow(640, 320, "Emulator Screen", NULL, NULL);
+    if (window == NULL) 
+    {
+        std::cout << "Failed to open GLFW window." << std::endl;
+        glfwTerminate();
+        return false;
+    }
+    glfwMakeContextCurrent(window);
+
+    return true;
+};
 void SetupInput() { };
 void DrawGraphics() { };
 
 int main(int argc, char** argv)
 {
     //Set up render system and register input callbacks
-    SetupGraphics();
+    if (!SetupGraphics()) 
+    {
+        return 0;
+    }
     SetupInput();
 
     chip8 myChip8;

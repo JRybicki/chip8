@@ -112,7 +112,7 @@ void chip8::EmulateCycle()
 
     case 0x6000: //6XNN: Sets VX to NN
     {
-        unsigned short regIndex = (opcode >> 8) & 0x000F; //Shift by byte to get only X value
+        unsigned short regIndex = (opcode & 0x0F00) >> 8; //Shift by byte to get only X value
         unsigned short value    = opcode & 0x00FF;
         V[regIndex] = value;
         pc += 2;
@@ -123,6 +123,35 @@ void chip8::EmulateCycle()
     {
         I = opcode & 0x0FFF;
         pc += 2;
+        break;
+    }
+
+    //0xD8B4
+    case 0xD000: //DXYN: Draw sprite at index Vx, Vy of height N (Always 8 pixel wide)
+    {
+        unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+        unsigned short yRegIndex = (opcode & 0x00F0) >> 4;
+
+        unsigned short Vx = V[xRegIndex];
+        unsigned short Vy = V[yRegIndex];
+        unsigned short N  = (opcode & 0x000F);
+
+        //Note: VF is set to 1 if pixels are turned on and 0 if turned off
+        V[0xF] = 0;
+
+        unsigned short pixelValue = 0;
+
+        //Note: N is height
+        for (unsigned short yIndex = 0; yIndex < N; yIndex++)
+        {
+            pixelValue = memory[I + yIndex];
+            //Always 8 pixels wide
+            for (unsigned short xIndex = 0; xIndex < 8; xIndex++)
+            {
+
+            }
+        }
+
         break;
     }
 
