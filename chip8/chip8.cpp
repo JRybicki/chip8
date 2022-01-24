@@ -148,10 +148,18 @@ void chip8::EmulateCycle()
             //Always 8 pixels wide
             for (unsigned short xIndex = 0; xIndex < 8; xIndex++)
             {
-
+                //Check if the pixel value is already set to true or not
+                unsigned short pixelIndex = (Vx + xIndex) + ((Vy + yIndex) * SCREEN_WIDTH);
+                if (gfx[pixelIndex] == 1)
+                {
+                    V[0xF] = 1; //Collision of sprites, another sprite is already in this location
+                    gfx[pixelIndex] ^= 1; //XOR current value with new value, this will blank out double writes
+                }
             }
         }
-
+        //Set the screen redraw update flag
+        drawFlag = true;
+        pc += 2;
         break;
     }
 

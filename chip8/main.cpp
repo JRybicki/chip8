@@ -2,12 +2,7 @@
 #include <chrono>
 #include "chip8.h"
 
-//Include GLEW
-#include <GL/glew.h>
-
-//Include GLFW
-#include <GLFW/glfw3.h>
-GLFWwindow* window;
+#include <GL/glut.h>
 
 //Use chrono high resolution clock if setting framerate
 typedef std::chrono::high_resolution_clock Clock;
@@ -20,65 +15,24 @@ typedef std::chrono::high_resolution_clock Clock;
 //0x000 - 0x050 - Use this for the built in 4x5 pixel font set(0 - F)
 //0x200 - 0xFFF - Program ROM and work RAM
 
+//Main class
+chip8 myChip8;
+
 bool SetupGraphics() 
 { 
-    //Initialise GLFW
-    if (!glfwInit())
-    {
-        std::cout << "Failed to initialize GLFW" << std::endl;
-        return false;
-    }
-
-    //Open a window and create its OpenGL context
-    window = glfwCreateWindow(640, 320, "Emulator Screen", NULL, NULL);
-    if (window == NULL) 
-    {
-        std::cout << "Failed to open GLFW window." << std::endl;
-        glfwTerminate();
-        return false;
-    }
-    glfwMakeContextCurrent(window);
-
     return true;
 };
 void SetupInput() { };
 void DrawGraphics() { };
 
-int main(int argc, char** argv)
+void runLoop()
 {
-    //Set up render system and register input callbacks
-    if (!SetupGraphics()) 
-    {
-        return 0;
-    }
-    SetupInput();
-
-    chip8 myChip8;
-
-    //Load the game passed into program
-    if (argc > 1)
-    {
-        //Initialize the Chip8 system and load the game into the memory  
-        myChip8.Initialize();
-
-        //Error if game can't be read, probably don't quit the program in a final version
-        if (!myChip8.LoadGame(argv[1])) //game name
-        {
-            return 0;
-        }
-    }
-    else
-    {
-        //No input given for the rom
-        return 0;
-    }
-
     //Frames per second, TODO: Make this variable in the future (Probably default to 60)
     const unsigned int frameRate = 60;
 
     std::chrono::nanoseconds deltaTime;
     std::chrono::nanoseconds accumulator = std::chrono::seconds(0);
-    std::chrono::nanoseconds frameTime   = std::chrono::nanoseconds(1000000000 / frameRate);
+    std::chrono::nanoseconds frameTime = std::chrono::nanoseconds(1000000000 / frameRate);
 
     //Store this outside for loop so value keeps
     std::chrono::time_point<Clock> oldTime = Clock::now();
@@ -87,7 +41,7 @@ int main(int argc, char** argv)
     for (;;)
     {
         deltaTime = Clock::now() - oldTime;
-        oldTime   = Clock::now();
+        oldTime = Clock::now();
 
         accumulator += deltaTime;
 
@@ -114,6 +68,46 @@ int main(int argc, char** argv)
             myChip8.SetKeys();
         }
     }
+}
+
+int main(int argc, char** argv)
+{
+    //Load the game passed into program
+    if (argc > 1)
+    {
+        //Initialize the Chip8 system and load the game into the memory  
+        myChip8.Initialize();
+
+        //Error if game can't be read, probably don't quit the program in a final version
+        if (!myChip8.LoadGame(argv[1])) //game name
+        {
+            return 0;
+        }
+    }
+    else
+    {
+        //No input given for the rom
+        return 0;
+    }
+
+    //Init GLUT and create Window
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
+    glutInitWindowPosition(200, 200);
+    glutInitWindowSize(640, 320);
+    glutCreateWindow("Chip-8 Emulator");
+
+    //Set up render system and register input callbacks
+    if (!SetupGraphics())
+    {
+        return 0;
+    }
+    SetupInput();
+
+    glutDisplayFunc(runLoop);
+    glutIdleFunc(runLoop);
+
+    glutMainLoop();
 
     return 0;
 }
