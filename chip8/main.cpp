@@ -1,7 +1,7 @@
 #include <iostream>
 #include <chrono>
 #include "chip8.h"
-
+#include <windows.h>
 #include <GL/glut.h>
 
 //Use chrono high resolution clock if setting framerate
@@ -18,56 +18,101 @@ typedef std::chrono::high_resolution_clock Clock;
 //Main class
 chip8 myChip8;
 
-bool SetupGraphics() 
-{ 
-    return true;
-};
+//Screen buffer for openGL
+static const unsigned int SCREEN_WIDTH  = 64;
+static const unsigned int SCREEN_HEIGHT = 32;
+unsigned char screenData[SCREEN_HEIGHT][SCREEN_WIDTH][3];
+unsigned int display_width  = SCREEN_WIDTH  * 10;
+unsigned int display_height = SCREEN_HEIGHT * 10;
+
+//Timer Variables
+//Frames per second, TODO: Make this variable in the future (Probably default to 60)
+static const unsigned int frameRate = 1;
+
+std::chrono::nanoseconds deltaTime;
+std::chrono::nanoseconds accumulator;
+std::chrono::nanoseconds frameTime = std::chrono::nanoseconds(1000000000 / frameRate); //don't make this const framerate could change
+std::chrono::time_point<Clock> oldTime;
+
+
 void SetupInput() { };
-void DrawGraphics() { };
+void DrawGraphics() 
+{
+    // Clear framebuffer
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // Swap buffers!
+    glutSwapBuffers();
+};
 
 void runLoop()
 {
-    //Frames per second, TODO: Make this variable in the future (Probably default to 60)
-    const unsigned int frameRate = 60;
-
-    std::chrono::nanoseconds deltaTime;
-    std::chrono::nanoseconds accumulator = std::chrono::seconds(0);
-    std::chrono::nanoseconds frameTime = std::chrono::nanoseconds(1000000000 / frameRate);
-
-    //Store this outside for loop so value keeps
-    std::chrono::time_point<Clock> oldTime = Clock::now();
     //Emulation loop
     //Don't use vsync in this solution yet, TODO: just keep track of the time and run at 60Hz
-    for (;;)
+    deltaTime = Clock::now() - oldTime;
+    oldTime = Clock::now();
+
+    accumulator += deltaTime;
+
+    while (accumulator.count() > frameTime.count())
     {
-        deltaTime = Clock::now() - oldTime;
-        oldTime = Clock::now();
-
-        accumulator += deltaTime;
-
-        while (accumulator.count() > frameTime.count())
-        {
 #ifdef DEBUGPRINT
-            //This will affect the framerate timing
-            std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(accumulator);
-            std::cout << "Frame timer: " << ms.count() << std::endl;
+        //This will affect the framerate timing
+        std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(accumulator);
+        std::cout << "Frame timer: " << ms.count() << std::endl;
 #endif // DEBUGPRINT
 
-            accumulator -= frameTime;
+        accumulator -= frameTime;
 
-            //Emulate one cycle
-            myChip8.EmulateCycle();
+        //Emulate one cycle
+        myChip8.EmulateCycle();
 
-            //If the draw flag is set, update the screen
-            if (myChip8.GetDrawFlag())
-            {
-                DrawGraphics();
-            }
-
-            //Store key press state (Press and Release)
-            myChip8.SetKeys();
+        //If the draw flag is set, update the screen
+        //if (myChip8.GetDrawFlag())
+        if(true)
+        {
+            DrawGraphics();
         }
+
+        //Store key press state (Press and Release)
+        myChip8.SetKeys();
     }
+}
+
+//Setup Texture (this code and the reshape_window is really from the how to write an emulator example)
+void SetupGraphics()
+{
+    //Clear screen
+    for (int y = 0; y < SCREEN_HEIGHT; ++y)
+        for (int x = 0; x < SCREEN_WIDTH; ++x)
+            screenData[y][x][0] = screenData[y][x][1] = screenData[y][x][2] = 0;
+
+    //Create a texture 
+    glTexImage2D(GL_TEXTURE_2D, 0, 3, SCREEN_WIDTH, SCREEN_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*)screenData);
+
+    //Set up the texture
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
+    //Setup accumulator to 0 so on first main call we draw a frame
+    accumulator = std::chrono::seconds(0);
+    oldTime = Clock::now();
+}
+
+void reshape_window(GLsizei w, GLsizei h)
+{
+    glClearColor(0.0f, 0.0f, 0.5f, 0.0f);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(0, w, h, 0);
+    glMatrixMode(GL_MODELVIEW);
+    glViewport(0, 0, w, h);
+
+    // Resize quad
+    display_width = w;
+    display_height = h;
 }
 
 int main(int argc, char** argv)
@@ -94,18 +139,16 @@ int main(int argc, char** argv)
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
     glutInitWindowPosition(200, 200);
-    glutInitWindowSize(640, 320);
+    glutInitWindowSize(display_width, display_height);
     glutCreateWindow("Chip-8 Emulator");
 
     //Set up render system and register input callbacks
-    if (!SetupGraphics())
-    {
-        return 0;
-    }
+    SetupGraphics();
     SetupInput();
 
     glutDisplayFunc(runLoop);
     glutIdleFunc(runLoop);
+    glutReshapeFunc(reshape_window);
 
     glutMainLoop();
 

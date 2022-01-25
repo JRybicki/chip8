@@ -15,13 +15,13 @@ public:
 
     void SetKeys();
 
+    static const unsigned int SCREEN_WIDTH = 64;
+    static const unsigned int SCREEN_HEIGHT = 32;
+
 private:
     //Some system settings variables
     static const unsigned int SYSTEM_MEMORY = 4096;
     static const unsigned int SYSEM_REGISTER = 16;
-
-    static const unsigned int SCREEN_WIDTH = 64;
-    static const unsigned int SCREEN_HEIGHT = 32;
 
     //System meory and registers
     unsigned char  memory[SYSTEM_MEMORY];
