@@ -12,11 +12,17 @@ public:
     void EmulateCycle();
 
     bool GetDrawFlag() { return drawFlag; }
+    void ResetDrawFlag() { drawFlag = false; }
 
     void SetKeys();
 
+    //Make graphics data public for openGL usage
     static const unsigned int SCREEN_WIDTH = 64;
     static const unsigned int SCREEN_HEIGHT = 32;
+    unsigned char  gfx[SCREEN_WIDTH * SCREEN_HEIGHT]; //64 * 32 = 2048
+
+    //keypad input
+    unsigned char key[16];
 
 private:
     //Some system settings variables
@@ -26,7 +32,6 @@ private:
     //System meory and registers
     unsigned char  memory[SYSTEM_MEMORY];
     unsigned char  V[SYSEM_REGISTER];
-    unsigned char  gfx[SCREEN_WIDTH * SCREEN_HEIGHT]; //64 * 32 = 2048
 
     //Stack information (size = 16 deep)
     unsigned short stack[16];
@@ -42,9 +47,6 @@ private:
     //Timer registers
     unsigned char delay_timer;
     unsigned char sound_timer;
-
-    //keypad input
-    unsigned char key[16];
 
     //Update scren flag
     bool drawFlag;

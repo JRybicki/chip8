@@ -27,7 +27,7 @@ unsigned int display_height = SCREEN_HEIGHT * 10;
 
 //Timer Variables
 //Frames per second, TODO: Make this variable in the future (Probably default to 60)
-static const unsigned int frameRate = 1;
+static const unsigned int frameRate = 5;
 
 std::chrono::nanoseconds deltaTime;
 std::chrono::nanoseconds accumulator;
@@ -36,13 +36,49 @@ std::chrono::time_point<Clock> oldTime;
 
 
 void SetupInput() { };
+void SetupGraphics();
+void reshape_window(GLsizei w, GLsizei h);
+
+void updateTexture()
+{
+    // Update pixels
+    for (int y = 0; y < 32; ++y)
+    {
+        for (int x = 0; x < 64; ++x)
+        {
+            if (myChip8.gfx[(y * 64) + x] == 0)
+            {
+                screenData[y][x][0] = screenData[y][x][1] = screenData[y][x][2] = 0;	// Disabled
+            }
+            else
+            {
+                screenData[y][x][0] = screenData[y][x][1] = screenData[y][x][2] = 255;  // Enabled
+            }
+        }
+    }
+
+    // Update Texture
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*)screenData);
+
+    glBegin(GL_QUADS);
+    glTexCoord2d(0.0, 0.0);		glVertex2d(0.0, 0.0);
+    glTexCoord2d(1.0, 0.0); 	glVertex2d(display_width, 0.0);
+    glTexCoord2d(1.0, 1.0); 	glVertex2d(display_width, display_height);
+    glTexCoord2d(0.0, 1.0); 	glVertex2d(0.0, display_height);
+    glEnd();
+}
+
 void DrawGraphics() 
 {
     // Clear framebuffer
     glClear(GL_COLOR_BUFFER_BIT);
 
+    updateTexture();
+
     // Swap buffers!
     glutSwapBuffers();
+
+    myChip8.ResetDrawFlag();
 };
 
 void runLoop()
@@ -56,64 +92,37 @@ void runLoop()
 
     while (accumulator.count() > frameTime.count())
     {
-#ifdef DEBUGPRINT
-        //This will affect the framerate timing
-        std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(accumulator);
-        std::cout << "Frame timer: " << ms.count() << std::endl;
-#endif // DEBUGPRINT
-
         accumulator -= frameTime;
 
         //Emulate one cycle
         myChip8.EmulateCycle();
 
+#ifdef DEBUGPRINT
+        //This will affect the framerate timing
+        std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(accumulator);
+        std::cout << "Frame timer: " << std::dec << ms.count();
+#endif // DEBUGPRINT
+
         //If the draw flag is set, update the screen
-        //if (myChip8.GetDrawFlag())
-        if(true)
+        if (myChip8.GetDrawFlag())
         {
             DrawGraphics();
+
+#ifdef DEBUGPRINT
+            std::cout << " - Update Screen";
+#endif // DEBUGPRINT
+
         }
+
+#ifdef DEBUGPRINT
+        std::cout << std::endl;  //flush the buffer
+#endif // DEBUGPRINT
 
         //Store key press state (Press and Release)
         myChip8.SetKeys();
     }
 }
 
-//Setup Texture (this code and the reshape_window is really from the how to write an emulator example)
-void SetupGraphics()
-{
-    //Clear screen
-    for (int y = 0; y < SCREEN_HEIGHT; ++y)
-        for (int x = 0; x < SCREEN_WIDTH; ++x)
-            screenData[y][x][0] = screenData[y][x][1] = screenData[y][x][2] = 0;
-
-    //Create a texture 
-    glTexImage2D(GL_TEXTURE_2D, 0, 3, SCREEN_WIDTH, SCREEN_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*)screenData);
-
-    //Set up the texture
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-
-    //Setup accumulator to 0 so on first main call we draw a frame
-    accumulator = std::chrono::seconds(0);
-    oldTime = Clock::now();
-}
-
-void reshape_window(GLsizei w, GLsizei h)
-{
-    glClearColor(0.0f, 0.0f, 0.5f, 0.0f);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluOrtho2D(0, w, h, 0);
-    glMatrixMode(GL_MODELVIEW);
-    glViewport(0, 0, w, h);
-
-    // Resize quad
-    display_width = w;
-    display_height = h;
-}
 
 int main(int argc, char** argv)
 {
@@ -153,4 +162,49 @@ int main(int argc, char** argv)
     glutMainLoop();
 
     return 0;
+}
+
+//Setup Texture (this code and the reshape_window is really from the how to write an emulator example)
+void SetupGraphics()
+{
+    //Clear screen
+    for (int y = 0; y < SCREEN_HEIGHT; ++y)
+    {
+        for (int x = 0; x < SCREEN_WIDTH; ++x)
+        {
+            screenData[y][x][0] = 0;
+            screenData[y][x][1] = 0;
+            screenData[y][x][2] = 0;
+        }
+    }
+
+    //Create a texture 
+    glTexImage2D(GL_TEXTURE_2D, 0, 3, SCREEN_WIDTH, SCREEN_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*)screenData);
+
+    //Set up the texture
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
+    //Enable textures
+    glEnable(GL_TEXTURE_2D);
+
+    //Setup accumulator to 0 so on first main call we draw a frame
+    accumulator = std::chrono::seconds(0);
+    oldTime = Clock::now();
+}
+
+void reshape_window(GLsizei w, GLsizei h)
+{
+    glClearColor(0.0f, 0.0f, 0.5f, 0.0f);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(0, w, h, 0);
+    glMatrixMode(GL_MODELVIEW);
+    glViewport(0, 0, w, h);
+
+    // Resize quad
+    display_width = w;
+    display_height = h;
 }

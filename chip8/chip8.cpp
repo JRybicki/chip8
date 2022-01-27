@@ -1,5 +1,6 @@
 #include <string>
 #include <stdio.h>
+#include <iostream>
 
 #include "chip8.h"
 
@@ -69,6 +70,8 @@ void chip8::EmulateCycle()
 {
     //Load opcode
     opcode = memory[pc] << 8 | memory[pc + 1];
+
+    std::cout << "opcode: " << std::hex << opcode << " - ";
 
     //Decode opcode 
     //https://en.wikipedia.org/wiki/CHIP-8 has a list of the opcodes
@@ -148,11 +151,15 @@ void chip8::EmulateCycle()
             //Always 8 pixels wide
             for (unsigned short xIndex = 0; xIndex < 8; xIndex++)
             {
-                //Check if the pixel value is already set to true or not
-                unsigned short pixelIndex = (Vx + xIndex) + ((Vy + yIndex) * SCREEN_WIDTH);
-                if (gfx[pixelIndex] == 1)
+                //Check if this pixel should be set according to memory (shift xIndex to match bit values in short)
+                if((pixelValue & (0x80 >> xIndex)) != 0)
                 {
-                    V[0xF] = 1; //Collision of sprites, another sprite is already in this location
+                    //Check if the pixel value is already set to true or not
+                    unsigned short pixelIndex = (Vx + xIndex) + ((Vy + yIndex) * SCREEN_WIDTH);
+                    if (gfx[pixelIndex] == 1)
+                    {
+                        V[0xF] = 1; //Collision of sprites, another sprite is already in this location
+                    }
                     gfx[pixelIndex] ^= 1; //XOR current value with new value, this will blank out double writes
                 }
             }
