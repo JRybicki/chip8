@@ -113,10 +113,65 @@ void chip8::EmulateCycle()
         break;
     }
 
+    case 0x3000: //3XNN Skips the next instruction if Vx == NN
+    {
+        unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+        unsigned short Vx = V[xRegIndex];
+
+        unsigned short NN = opcode & 0x00FF;
+
+        if (Vx == NN)
+        {
+            pc += 4;
+        }
+        else
+        {
+            pc += 2;
+        }
+        break;
+    }
+
+    case 0x4000: //4XNN: Skips the next instruction if Vx != NN
+    {
+        unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+        unsigned short Vx = V[xRegIndex];
+
+        unsigned short NN = opcode & 0x00FF;
+
+        if (Vx != NN)
+        {
+            pc += 4;
+        }
+        else
+        {
+            pc += 2;
+        }
+        break;
+    }
+
+    case 0x5000: //5XY0: Skips the next instruction if Vx == Vy
+    {
+        unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+        unsigned short Vx = V[xRegIndex];
+
+        unsigned short yRegIndex = (opcode & 0x00F0) >> 8;
+        unsigned short Vy = V[yRegIndex];
+
+        if (Vx == Vy)
+        {
+            pc += 4;
+        }
+        else
+        {
+            pc += 2;
+        }
+        break;
+    }
+
     case 0x6000: //6XNN: Sets VX to NN
     {
         unsigned short regIndex = (opcode & 0x0F00) >> 8; //Shift by byte to get only X value
-        unsigned short value    = opcode & 0x00FF;
+        unsigned short value    = (opcode & 0x00FF);
         V[regIndex] = value;
         pc += 2;
         break;
