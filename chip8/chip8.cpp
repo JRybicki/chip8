@@ -1,6 +1,7 @@
 #include <string>
 #include <stdio.h>
 #include <iostream>
+#include <iomanip>
 
 #include "chip8.h"
 
@@ -71,7 +72,7 @@ void chip8::EmulateCycle()
     //Load opcode
     opcode = memory[pc] << 8 | memory[pc + 1];
 
-    std::cout << "opcode: " << std::hex << opcode << " - ";
+    std::cout << "opcode: " << std::setw(4) << std::hex << opcode << " - ";
 
     //Decode opcode 
     //https://en.wikipedia.org/wiki/CHIP-8 has a list of the opcodes
@@ -84,17 +85,25 @@ void chip8::EmulateCycle()
     {
         switch (opcode & 0x000F)
         {
-        case 0x0000: //0x00E0: Clears the screen        
-            //Execute opcode
-            break;
-
-        case 0x000E: //0x00EE: Returns from subroutine          
-            //Execute opcode
-            break;
-
-        default:
-            printf("Unknown opcode [0x0000]: 0x%X\n", opcode);
-            break;
+            case 0x0000: //0x00E0: Clears the screen (No other 0x0NNN instruction ends in 0 so just check for this)
+            {
+                memset(gfx, 0, (SCREEN_WIDTH * SCREEN_HEIGHT) * sizeof(char));
+                drawFlag = true;
+                pc += 2;
+                break;
+            }
+            case 0x000E: //0x00EE: Returns from subroutine        
+            {
+                sp--;
+                pc = stack[sp]; //Set the program counter to the top address on the stack
+                pc += 2;        //Increment by 2 or we'll be stuck in an infinite loop
+                break;
+            }
+            default:
+            {
+                printf("Unknown opcode: 0x%X\n", opcode);
+                break;
+            }
         }
         break;
     }
@@ -154,7 +163,7 @@ void chip8::EmulateCycle()
         unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
         unsigned short Vx = V[xRegIndex];
 
-        unsigned short yRegIndex = (opcode & 0x00F0) >> 8;
+        unsigned short yRegIndex = (opcode & 0x00F0) >> 4;
         unsigned short Vy = V[yRegIndex];
 
         if (Vx == Vy)
@@ -177,6 +186,141 @@ void chip8::EmulateCycle()
         break;
     }
 
+    case 0x7000: //0x7XNN: Adds NN to Vx
+    {
+        unsigned short NN = opcode & 0x00FF;
+
+        unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+        V[xRegIndex] += NN;
+
+        pc += 2;
+        break;
+    }
+    
+    //There are multiple 0x8NNN opcodes
+    case 0x8000:
+    {
+        switch (opcode & 0x000F)
+        {
+            case 0x0000: //0x8XY0: Sets the value of Vx to Vy (Vx = Vy)
+            {
+                unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+                unsigned short yRegIndex = (opcode & 0x00F0) >> 4;
+
+                V[xRegIndex] = V[yRegIndex];
+
+                pc += 2;
+                break;
+            }
+            case 0x0001: //0x8XY1: Sets the value of Vx to (Vx OR Vy) (Vx |= Vy)
+            {
+                unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+                unsigned short yRegIndex = (opcode & 0x00F0) >> 4;
+
+                V[xRegIndex] |= V[yRegIndex];
+
+                pc += 2;
+                break;
+            }
+            case 0x0002: //0x8XY2: Sets the value of Vx to (Vx AND Vy) (Vx & Vy)
+            {
+                unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+                unsigned short yRegIndex = (opcode & 0x00F0) >> 4;
+
+                V[xRegIndex] &= V[yRegIndex];
+
+                pc += 2;
+                break;
+            }
+            case 0x0003: //0x8XY3: Sets the value of Vx to (Vx XOR Vy) (Vx ^= Vy)
+            {
+                unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+                unsigned short yRegIndex = (opcode & 0x00F0) >> 4;
+
+                V[xRegIndex] ^= V[yRegIndex];
+
+                pc += 2;
+                break;
+            }
+            case 0x0004: //0x8XY4: Sets the value of Vx to (Vx + Vy) (Vx += Vy)
+            {
+                unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+                unsigned short yRegIndex = (opcode & 0x00F0) >> 4;
+
+                //Check for overflow
+                if ((V[xRegIndex] + V[yRegIndex]) > 0xFF)
+                {
+                    V[0xF] = 1;
+                }
+                else
+                {
+                    V[0xF] = 0;
+                }
+                
+                V[xRegIndex] += V[yRegIndex];
+
+                pc += 2;
+                break;
+            }
+            case 0x0005: //0x8XY5: Sets the value of Vx to (Vx - Vy) (Vx -= Vy)
+            {
+                unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+                unsigned short yRegIndex = (opcode & 0x00F0) >> 4;
+
+                //Check for underflow
+                if (V[yRegIndex] > V[xRegIndex] )
+                {
+                    V[0xF] = 0;
+                }
+                else
+                {
+                    V[0xF] = 1;
+                }
+
+                V[xRegIndex] -= V[yRegIndex];
+
+                pc += 2;
+                break;
+            }
+            case 0x000E: //0x8XYE: Store the MSB of Vx in V[0xF] and shift Vx to the left by 1 (Vx <<= 1)
+            {
+                unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+                
+                V[0xF] = V[xRegIndex] & 0x80;
+                
+                V[xRegIndex] <<= 1;
+
+                pc += 2;
+                break;
+            }
+            default:
+            {
+                printf("Unknown opcode: 0x%X\n", opcode);
+                break;
+            }
+        }
+        break;
+    }
+
+    case 0x9000: //0x9XY0: Skips the next instruction if Vx != Vy
+    {
+        unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+        unsigned short Vx = V[xRegIndex];
+
+        unsigned short yRegIndex = (opcode & 0x00F0) >> 4;
+        unsigned short Vy = V[yRegIndex];
+
+        if (Vx != Vy)
+        {
+            pc += 4;
+        }
+        else
+        {
+            pc += 2;
+        }
+        break;
+    }
+
     case 0xA000: //ANNN: Sets Index register to the address NNN
     {
         I = opcode & 0x0FFF;
@@ -184,7 +328,6 @@ void chip8::EmulateCycle()
         break;
     }
 
-    //0xD8B4
     case 0xD000: //DXYN: Draw sprite at index Vx, Vy of height N (Always 8 pixel wide)
     {
         unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
@@ -222,6 +365,39 @@ void chip8::EmulateCycle()
         //Set the screen redraw update flag
         drawFlag = true;
         pc += 2;
+        break;
+    }
+
+    //TODO:
+    case 0xE000:
+    {
+        switch (opcode & 0x000F)
+        {
+            case 0x000E: //0xEX9E: Skips the next instruction if key() == Vx
+                //Execute opcode
+                break;
+
+            case 0x0001: //0xEXA1: Skips the next instruction if key() != Vx  
+                //Execute opcode
+                break;
+
+            default:
+                printf("Unknown opcode [0x0000]: 0x%X\n", opcode);
+                break;
+        }
+        break;
+    }
+
+    //TODO: F090
+    case 0xF000:
+    {
+        switch (opcode & 0x000F)
+        {
+
+        default:
+            printf("Unknown opcode [0x0000]: 0x%X\n", opcode);
+            break;
+        }
         break;
     }
 
