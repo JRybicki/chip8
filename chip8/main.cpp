@@ -24,7 +24,7 @@ unsigned int display_height = SCREEN_HEIGHT * 10;
 
 //Timer Variables
 //Frames per second, TODO: Make this variable in the future (Probably default to 60)
-static const unsigned int frameRate = 120;
+static const unsigned int frameRate = 60;
 
 std::chrono::nanoseconds deltaTime;
 std::chrono::nanoseconds accumulator;
@@ -89,16 +89,16 @@ void runLoop()
 
     while (accumulator.count() > frameTime.count())
     {
-        accumulator -= frameTime;
-
         //Emulate one cycle
         myChip8.EmulateCycle();
 
 #ifdef DEBUGPRINT
         //This will affect the framerate timing
         std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(accumulator);
-        std::cout << "Frame timer: " << std::dec << ms.count();
+        std::cout << "Frame timer: " << std::dec << ms.count() << " ms";
 #endif // DEBUGPRINT
+
+        accumulator -= frameTime;
 
         //If the draw flag is set, update the screen
         if (myChip8.GetDrawFlag())
