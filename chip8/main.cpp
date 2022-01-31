@@ -7,9 +7,6 @@
 //Use chrono high resolution clock if setting framerate
 typedef std::chrono::high_resolution_clock Clock;
 
-//#DEFINES
-#define DEBUGPRINT
-
 //PROGRAM INFORMATION
 //0x000 - 0x1FF - This would be the chip 8 interpreter but doesn't really matter, keep with history and leave empty
 //0x000 - 0x050 - Use this for the built in 4x5 pixel font set(0 - F)

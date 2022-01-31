@@ -66,9 +66,9 @@ void chip8::EmulateCycle()
 {
     //Load opcode
     opcode = memory[pc] << 8 | memory[pc + 1];
-
+#ifdef DEBUGPRINT
     std::cout << "opcode: " << std::setw(4) << std::hex << opcode << " - ";
-
+#endif
     //Decode opcode 
     //https://en.wikipedia.org/wiki/CHIP-8 has a list of the opcodes
     //Remember - Stack and PC are unsigned shorts (2 bytes that represent numbers from 0x0000 to OxFFFF)
@@ -459,6 +459,7 @@ void chip8::EmulateCycle()
             }
             break;
         }
+        break;
     }
 
     default:

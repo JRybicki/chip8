@@ -1,4 +1,8 @@
 #pragma once
+
+//#DEFINES
+#define DEBUGPRINT
+
 class chip8
 {
 public:
