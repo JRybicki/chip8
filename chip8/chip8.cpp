@@ -39,11 +39,6 @@ void chip8::Initialize()
 
     //Load font into memory (5 X 16 = 80)
     memcpy(memory, chip8_fontset, sizeof(char) * 80);
-
-    // This is a test remove later - 
-    // Assume the following:
-    memory[pc] = 0xA2;
-    memory[pc + 1] = 0xF0;
 }
 
 bool chip8::LoadGame(char* romPath)
@@ -122,7 +117,7 @@ void chip8::EmulateCycle()
         break;
     }
 
-    case 0x3000: //3XNN Skips the next instruction if Vx == NN
+    case 0x3000: //3XNN Skips the next instruction if V[X] == NN
     {
         unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
         unsigned short Vx = V[xRegIndex];
@@ -140,7 +135,7 @@ void chip8::EmulateCycle()
         break;
     }
 
-    case 0x4000: //4XNN: Skips the next instruction if Vx != NN
+    case 0x4000: //4XNN: Skips the next instruction if V[X] != NN
     {
         unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
         unsigned short Vx = V[xRegIndex];
@@ -158,7 +153,7 @@ void chip8::EmulateCycle()
         break;
     }
 
-    case 0x5000: //5XY0: Skips the next instruction if Vx == Vy
+    case 0x5000: //5XY0: Skips the next instruction if V[X] == V[Y]
     {
         unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
         unsigned short Vx = V[xRegIndex];
@@ -177,7 +172,7 @@ void chip8::EmulateCycle()
         break;
     }
 
-    case 0x6000: //6XNN: Sets VX to NN
+    case 0x6000: //6XNN: Sets V[X] to NN
     {
         unsigned short regIndex = (opcode & 0x0F00) >> 8; //Shift by byte to get only X value
         unsigned short value    = (opcode & 0x00FF);
@@ -186,7 +181,7 @@ void chip8::EmulateCycle()
         break;
     }
 
-    case 0x7000: //0x7XNN: Adds NN to Vx
+    case 0x7000: //0x7XNN: Adds NN to V[X]
     {
         unsigned short NN = opcode & 0x00FF;
 
@@ -202,7 +197,7 @@ void chip8::EmulateCycle()
     {
         switch (opcode & 0x000F)
         {
-            case 0x0000: //0x8XY0: Sets the value of Vx to Vy (Vx = Vy)
+            case 0x0000: //0x8XY0: Sets the value of V[X] to V[Y] (V[X] = V[Y])
             {
                 unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
                 unsigned short yRegIndex = (opcode & 0x00F0) >> 4;
@@ -212,7 +207,7 @@ void chip8::EmulateCycle()
                 pc += 2;
                 break;
             }
-            case 0x0001: //0x8XY1: Sets the value of Vx to (Vx OR Vy) (Vx |= Vy)
+            case 0x0001: //0x8XY1: Sets the value of Vx to (V[X] OR V[Y]) (V[X] |= V[Y])
             {
                 unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
                 unsigned short yRegIndex = (opcode & 0x00F0) >> 4;
@@ -222,7 +217,7 @@ void chip8::EmulateCycle()
                 pc += 2;
                 break;
             }
-            case 0x0002: //0x8XY2: Sets the value of Vx to (Vx AND Vy) (Vx & Vy)
+            case 0x0002: //0x8XY2: Sets the value of Vx to (Vx AND V[Y]) (Vx & V[Y])
             {
                 unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
                 unsigned short yRegIndex = (opcode & 0x00F0) >> 4;
@@ -232,7 +227,7 @@ void chip8::EmulateCycle()
                 pc += 2;
                 break;
             }
-            case 0x0003: //0x8XY3: Sets the value of Vx to (Vx XOR Vy) (Vx ^= Vy)
+            case 0x0003: //0x8XY3: Sets the value of Vx to (V[X] XOR V[Y]) (V[X] ^= V[Y])
             {
                 unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
                 unsigned short yRegIndex = (opcode & 0x00F0) >> 4;
@@ -242,7 +237,7 @@ void chip8::EmulateCycle()
                 pc += 2;
                 break;
             }
-            case 0x0004: //0x8XY4: Sets the value of Vx to (Vx + Vy) (Vx += Vy)
+            case 0x0004: //0x8XY4: Sets the value of Vx to (V[X] + V[Y]) (V[X] += V[Y])
             {
                 unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
                 unsigned short yRegIndex = (opcode & 0x00F0) >> 4;
@@ -262,7 +257,7 @@ void chip8::EmulateCycle()
                 pc += 2;
                 break;
             }
-            case 0x0005: //0x8XY5: Sets the value of Vx to (Vx - Vy) (Vx -= Vy)
+            case 0x0005: //0x8XY5: Sets the value of Vx to (V[X] - V[Y]) (V[X] -= V[Y])
             {
                 unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
                 unsigned short yRegIndex = (opcode & 0x00F0) >> 4;
@@ -282,7 +277,18 @@ void chip8::EmulateCycle()
                 pc += 2;
                 break;
             }
-            case 0x000E: //0x8XYE: Store the MSB of Vx in V[0xF] and shift Vx to the left by 1 (Vx <<= 1)
+            case 0x0006: //0x8XY6: Store the LSB of Vx in V[0xF] and shift Vx to the right by 1 (V[X] >>= 1)
+            {
+                unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+
+                V[0xF] = V[xRegIndex] & 0x01;
+
+                V[xRegIndex] >>= 1;
+
+                pc += 2;
+                break;
+            }
+            case 0x000E: //0x8XYE: Store the MSB of Vx in V[0xF] and shift Vx to the left by 1 (V[X] <<= 1)
             {
                 unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
                 
@@ -302,7 +308,7 @@ void chip8::EmulateCycle()
         break;
     }
 
-    case 0x9000: //0x9XY0: Skips the next instruction if Vx != Vy
+    case 0x9000: //0x9XY0: Skips the next instruction if V[X] != V[Y]
     {
         unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
         unsigned short Vx = V[xRegIndex];
@@ -328,7 +334,7 @@ void chip8::EmulateCycle()
         break;
     }
 
-    case 0xD000: //DXYN: Draw sprite at index Vx, Vy of height N (Always 8 pixel wide)
+    case 0xD000: //DXYN: Draw sprite at index V[X], V[Y] of height N (Always 8 pixel wide)
     {
         unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
         unsigned short yRegIndex = (opcode & 0x00F0) >> 4;
@@ -382,23 +388,77 @@ void chip8::EmulateCycle()
                 break;
 
             default:
-                printf("Unknown opcode [0x0000]: 0x%X\n", opcode);
+                printf("Unknown opcode [0xE000]: 0x%X\n", opcode);
                 break;
         }
         break;
     }
 
-    //TODO: F090
+    //TODO: F155
     case 0xF000:
     {
-        switch (opcode & 0x000F)
+        switch (opcode & 0x00FF)
         {
+            case 0x0015: //0xFX15: Set the delay timer to V[X]
+            {
+                unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
 
-        default:
-            printf("Unknown opcode [0x0000]: 0x%X\n", opcode);
+                delay_timer = V[xRegIndex];
+
+                pc += 2;
+                break;
+            }
+            case 0x0018: //0xFX15: Set the sound timer to V[X]
+            {
+                unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+
+                sound_timer = V[xRegIndex];
+
+                pc += 2;
+                break;
+            }
+            case 0x0055: //0xFX55: Store V[0] to V[x] (including V[X]) in memory starting at i
+            {
+                unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+
+                memcpy(memory + I, V, (xRegIndex + 1) * sizeof(char));
+
+                pc += 2;
+                break;
+            }
+            case 0x0033: //0xFX55: Store binary coded decimal of V[X] at I
+            {
+                unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+                //137
+                unsigned char x1 = V[xRegIndex] / 100;        //Char only goes to 255
+                unsigned char x2 = (V[xRegIndex] / 10) % 10;  //Remove last place and mod 10
+                unsigned char x3 = (V[xRegIndex] % 100) % 10; //Mod by 100 and then 10
+
+                memory[I]     = x1;
+                memory[I + 1] = x2;
+                memory[I + 2] = x3;
+
+                //memcpy(memory + I, V, (xRegIndex + 1) * sizeof(char));
+
+                pc += 2;
+                break;
+            }
+            case 0x0065: //0xFX55: Copy memory at I V[0] to V[X] (including V[X])
+            {
+                unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+
+                memcpy(V, memory + I, (xRegIndex + 1) * sizeof(char));
+
+                pc += 2;
+                break;
+            }
+            default:
+            {
+                printf("Unknown opcode [0xF000]: 0x%X\n", opcode);
+                break;
+            }
             break;
         }
-        break;
     }
 
     default:

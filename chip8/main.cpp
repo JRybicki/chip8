@@ -27,7 +27,7 @@ unsigned int display_height = SCREEN_HEIGHT * 10;
 
 //Timer Variables
 //Frames per second, TODO: Make this variable in the future (Probably default to 60)
-static const unsigned int frameRate = 60;
+static const unsigned int frameRate = 120;
 
 std::chrono::nanoseconds deltaTime;
 std::chrono::nanoseconds accumulator;
