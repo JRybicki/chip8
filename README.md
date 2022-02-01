@@ -24,12 +24,12 @@ Opcodes Currently Implemented -
 | 8XY4 | Done |
 | 8XY5 | Done |
 | 8XY6 | Done |
-| 8XY7 |      |
+| 8XY7 | Done |
 | 8XYE | Done |
 | 9XY0 | Done |
 | ANNN | Done |
-| BNNN |      |
-| CXNN |      |
+| BNNN | Done |
+| CXNN | Done |
 | DXYN | Done |
 | EX9E |      |
 | EXA1 |      |

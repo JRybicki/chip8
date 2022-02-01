@@ -288,6 +288,26 @@ void chip8::EmulateCycle()
                 pc += 2;
                 break;
             }
+            case 0x0007: //0x8XY5: Sets the value of Vx to (V[Y] - V[X]) (V[X] = V[Y] - V[X])
+            {
+                unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+                unsigned short yRegIndex = (opcode & 0x00F0) >> 4;
+
+                //Check for underflow
+                if (V[xRegIndex] > V[yRegIndex])
+                {
+                    V[0xF] = 0;
+                }
+                else
+                {
+                    V[0xF] = 1;
+                }
+
+                V[xRegIndex] = V[yRegIndex] - V[xRegIndex];
+
+                pc += 2;
+                break;
+            }
             case 0x000E: //0x8XYE: Store the MSB of Vx in V[0xF] and shift Vx to the left by 1 (V[X] <<= 1)
             {
                 unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
@@ -330,6 +350,26 @@ void chip8::EmulateCycle()
     case 0xA000: //ANNN: Sets Index register to the address NNN
     {
         I = opcode & 0x0FFF;
+        pc += 2;
+        break;
+    }
+
+    case 0xB000: //BNNN: Sets Index register to the address NNN + V[0]
+    {
+        unsigned short NNN = opcode & 0x0FFF;
+        pc = NNN + V[0];
+        break;
+    }
+
+    case 0xC000: //CXNN: Sets V[X] to rand() & NN
+    {
+        unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+        unsigned short NN        = (opcode & 0x00FF);
+
+        unsigned short randVal = rand();
+
+        V[xRegIndex] = (randVal && NN);
+
         pc += 2;
         break;
     }
