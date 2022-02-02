@@ -1,4 +1,7 @@
 #include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
 #include <chrono>
 #include "chip8.h"
 #include <windows.h>
@@ -22,19 +25,25 @@ unsigned char screenData[SCREEN_HEIGHT][SCREEN_WIDTH][3];
 unsigned int display_width  = SCREEN_WIDTH  * 10;
 unsigned int display_height = SCREEN_HEIGHT * 10;
 
+//Input keys (Compile with defaults)
+static const unsigned int NUM_KEYS = 16;
+unsigned char keyConfig[NUM_KEYS] = { '1', '2', '3', '4' , 'q', 'w', 'e', 'r', 'a', 's', 'd', 'f', 'z', 'x', 'c', 'v' };
+
 //Timer Variables
 //Frames per second, TODO: Make this variable in the future (Probably default to 60)
-static const unsigned int frameRate = 60;
+unsigned int frameRate = 600;  //don't make this const framerate could change
 
 std::chrono::nanoseconds deltaTime;
 std::chrono::nanoseconds accumulator;
-std::chrono::nanoseconds frameTime = std::chrono::nanoseconds(1000000000 / frameRate); //don't make this const framerate could change
+std::chrono::nanoseconds frameTime;
 std::chrono::time_point<Clock> oldTime;
 
 
-void SetupInput() { };
+void SetupInput(char* configPath);
 void SetupGraphics();
 void reshape_window(GLsizei w, GLsizei h);
+void keyboardUp(unsigned char key, int x, int y);
+void keyboardDown(unsigned char key, int x, int y);
 
 void updateTexture()
 {
@@ -120,7 +129,7 @@ void runLoop()
     }
 }
 
-
+//TODO: Change the input arugoments to have selectors (like -f for framerate) so you don't need all of them
 int main(int argc, char** argv)
 {
     //Load the game passed into program
@@ -141,6 +150,19 @@ int main(int argc, char** argv)
         return 0;
     }
 
+    //Optional input configuration file
+    if (argc > 2)
+    {
+        SetupInput(argv[2]);
+    }
+
+    //Optioanl framerate override
+    if (argc > 3)
+    {
+        //Update the framerate
+        frameRate = atoi(argv[3]);
+    }
+
     //Init GLUT and create Window
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
@@ -150,15 +172,43 @@ int main(int argc, char** argv)
 
     //Set up render system and register input callbacks
     SetupGraphics();
-    SetupInput();
 
     glutDisplayFunc(runLoop);
     glutIdleFunc(runLoop);
     glutReshapeFunc(reshape_window);
+    glutKeyboardFunc(keyboardDown);
+    glutKeyboardUpFunc(keyboardUp);
 
     glutMainLoop();
 
     return 0;
+}
+
+//Read in the config file for input keys, for now just assume every input is here in order
+//TODO: Something fancy with pairs
+void SetupInput(char* configPath)
+{
+    std::ifstream infile(configPath);
+
+    //Override the default
+    if (infile.is_open())
+    {
+        std::string line;
+        unsigned char index = 0;
+        while (std::getline(infile, line))
+        {
+            //This is a bit hacky but it works
+            std::stringstream line_stream(line);
+
+            std::string substr;
+            getline(line_stream, substr, ',');
+            getline(line_stream, substr, ',');  //Second paramter is input key
+
+            keyConfig[index] = *substr.c_str();
+            index++;
+        }
+        infile.close();
+    }
 }
 
 //Setup Texture (this code and the reshape_window is really from the how to write an emulator example)
@@ -190,6 +240,9 @@ void SetupGraphics()
     //Setup accumulator to 0 so on first main call we draw a frame
     accumulator = std::chrono::seconds(0);
     oldTime = Clock::now();
+
+    //Set the frame timer based on the frameRate
+    frameTime = std::chrono::nanoseconds(1000000000 / frameRate);
 }
 
 void reshape_window(GLsizei w, GLsizei h)
@@ -204,4 +257,57 @@ void reshape_window(GLsizei w, GLsizei h)
     // Resize quad
     display_width = w;
     display_height = h;
+}
+
+//Keyboard input pretty much from the emulator tutorial code as well, pretty simple working design
+void keyboardDown(unsigned char key, int x, int y)
+{
+    //Escape to exit
+    if (key == 27)
+    {
+        exit(0);
+    }
+
+    if (key == '1')		    myChip8.key[0x1] = 1;
+    else if (key == '2')	myChip8.key[0x2] = 1;
+    else if (key == '3')	myChip8.key[0x3] = 1;
+    else if (key == '4')	myChip8.key[0xC] = 1;
+
+    else if (key == 'q')	myChip8.key[0x4] = 1;
+    else if (key == 'w')	myChip8.key[0x5] = 1;
+    else if (key == 'e')	myChip8.key[0x6] = 1;
+    else if (key == 'r')	myChip8.key[0xD] = 1;
+
+    else if (key == 'a')	myChip8.key[0x7] = 1;
+    else if (key == 's')	myChip8.key[0x8] = 1;
+    else if (key == 'd')	myChip8.key[0x9] = 1;
+    else if (key == 'f')	myChip8.key[0xE] = 1;
+
+    else if (key == 'z')	myChip8.key[0xA] = 1;
+    else if (key == 'x')	myChip8.key[0x0] = 1;
+    else if (key == 'c')	myChip8.key[0xB] = 1;
+    else if (key == 'v')	myChip8.key[0xF] = 1;
+}
+
+void keyboardUp(unsigned char key, int x, int y)
+{
+    if (key == '1')		    myChip8.key[0x1] = 0;
+    else if (key == '2')	myChip8.key[0x2] = 0;
+    else if (key == '3')	myChip8.key[0x3] = 0;
+    else if (key == '4')	myChip8.key[0xC] = 0;
+
+    else if (key == 'q')	myChip8.key[0x4] = 0;
+    else if (key == 'w')	myChip8.key[0x5] = 0;
+    else if (key == 'e')	myChip8.key[0x6] = 0;
+    else if (key == 'r')	myChip8.key[0xD] = 0;
+
+    else if (key == 'a')	myChip8.key[0x7] = 0;
+    else if (key == 's')	myChip8.key[0x8] = 0;
+    else if (key == 'd')	myChip8.key[0x9] = 0;
+    else if (key == 'f')	myChip8.key[0xE] = 0;
+
+    else if (key == 'z')	myChip8.key[0xA] = 0;
+    else if (key == 'x')	myChip8.key[0x0] = 0;
+    else if (key == 'c')	myChip8.key[0xB] = 0;
+    else if (key == 'v')	myChip8.key[0xF] = 0;
 }
