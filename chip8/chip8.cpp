@@ -414,22 +414,47 @@ void chip8::EmulateCycle()
         break;
     }
 
-    //TODO:
     case 0xE000:
     {
-        switch (opcode & 0x000F)
+        switch (opcode & 0x00FF)
         {
-            case 0x000E: //0xEX9E: Skips the next instruction if key() == Vx
-                //Execute opcode
-                break;
+            case 0x009E: //0xEX9E: Skips the next instruction if key() == Vx (1 is pressed 0 is not pressed)
+            {
+                unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+                unsigned short Vx = V[xRegIndex];
 
-            case 0x0001: //0xEXA1: Skips the next instruction if key() != Vx  
-                //Execute opcode
+                if (key[Vx] == 1)
+                {
+                    pc += 4;
+                }
+                else
+                {
+                    pc += 2;
+                }
                 break;
+            }
+
+            case 0x00A1: //0xEXA1: Skips the next instruction if key() != Vx (1 is pressed 0 is not pressed)
+            {
+                unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+                unsigned short Vx = V[xRegIndex];
+
+                if (key[Vx] == 0)
+                {
+                    pc += 4;
+                }
+                else
+                {
+                    pc += 2;
+                }
+                break;
+            }
 
             default:
+            {
                 printf("Unknown opcode [0xE000]: 0x%X\n", opcode);
                 break;
+            }
         }
         break;
     }

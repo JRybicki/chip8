@@ -31,8 +31,8 @@ Opcodes Currently Implemented -
 | BNNN | Done |
 | CXNN | Done |
 | DXYN | Done |
-| EX9E |      |
-| EXA1 |      |
+| EX9E | Done |
+| EXA1 | Done |
 | FX07 |      |
 | FX0A |      |
 | FX15 | Done |
