@@ -3,7 +3,7 @@ chip8 emulator following some tutorials online
 
 https://multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/
 
-There's still some bugs in this and it doesn't run very smoothly
+## There's still some bugs in this and it doesn't run very smoothly
 
 Opcodes Currently Implemented - 
 
