@@ -3,6 +3,8 @@ chip8 emulator following some tutorials online
 
 https://multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/
 
+There's still some bugs in this and it doesn't run very smoothly
+
 Opcodes Currently Implemented - 
 
 | Opcode | Implemented |
@@ -33,12 +35,12 @@ Opcodes Currently Implemented -
 | DXYN | Done |
 | EX9E | Done |
 | EXA1 | Done |
-| FX07 |      |
-| FX0A |      |
+| FX07 | Done |
+| FX0A | Done |
 | FX15 | Done |
 | FX18 | Done |
-| FX1E |      |
-| FX29 |      |
-| FX33 |      |
+| FX1E | Done |
+| FX29 | Done |
+| FX33 | Done |
 | FX55 | Done |
 | FX65 | Done |

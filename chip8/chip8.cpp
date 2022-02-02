@@ -433,7 +433,6 @@ void chip8::EmulateCycle()
                 }
                 break;
             }
-
             case 0x00A1: //0xEXA1: Skips the next instruction if key() != Vx (1 is pressed 0 is not pressed)
             {
                 unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
@@ -464,6 +463,36 @@ void chip8::EmulateCycle()
     {
         switch (opcode & 0x00FF)
         {
+            case 0x0007: //0xFX07: Set V[X] to the delay timer
+            {
+                unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+
+                V[xRegIndex] = delay_timer;
+
+                pc += 2;
+                break;
+            }
+            case 0x000A: //0xFX0A: Set V[X] to the key value. Do not execute the next intruction until a key is pressed
+            {
+                unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+
+                bool keyPressed = false;
+                for (unsigned int i = 0; i < 16; i++)
+                {
+                    if (key[i] == 1)
+                    {
+                        V[xRegIndex] = i;
+                        keyPressed = true;
+                    }
+                }
+
+                //Block until a key is pressed
+                if (keyPressed == true)
+                {
+                    pc += 2;
+                }
+                break;
+            }
             case 0x0015: //0xFX15: Set the delay timer to V[X]
             {
                 unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
@@ -482,11 +511,20 @@ void chip8::EmulateCycle()
                 pc += 2;
                 break;
             }
-            case 0x0055: //0xFX55: Store V[0] to V[x] (including V[X]) in memory starting at i
+            case 0x001E: //0xFX1E: Add V[X] to I ignoring overflow
             {
                 unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
 
-                memcpy(memory + I, V, (xRegIndex + 1) * sizeof(char));
+                I += V[xRegIndex];
+
+                pc += 2;
+                break;
+            }
+            case 0x0029: //0xFX29: Sets I to the lcation of a sprite character in V[X], characters are stored at memory[0]
+            {
+                unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+
+                I += V[xRegIndex] * 5; //sprite chars are 5 values wide
 
                 pc += 2;
                 break;
@@ -503,7 +541,14 @@ void chip8::EmulateCycle()
                 memory[I + 1] = x2;
                 memory[I + 2] = x3;
 
-                //memcpy(memory + I, V, (xRegIndex + 1) * sizeof(char));
+                pc += 2;
+                break;
+            }
+            case 0x0055: //0xFX55: Store V[0] to V[x] (including V[X]) in memory starting at i
+            {
+                unsigned short xRegIndex = (opcode & 0x0F00) >> 8;
+
+                memcpy(memory + I, V, (xRegIndex + 1) * sizeof(char));
 
                 pc += 2;
                 break;
@@ -533,6 +578,13 @@ void chip8::EmulateCycle()
         break;
     }
     }
+
+    //Decrement delay timer at framerate
+    if (delay_timer > 0)
+    {
+        delay_timer--;
+    }
+
 }
 
 void chip8::SetKeys()
